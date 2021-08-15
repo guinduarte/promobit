@@ -1,0 +1,16 @@
+listUsers:
+  path: /api/v1/users
+  controller: App\Http\Controllers\UserController::list
+  methods: GET
+createUser:
+  path: /api/v1/users
+  controller: App\Http\Controllers\UserController::create
+  methods: POST
+updateUser:
+  path: /api/v1/user/{id}
+  controller: App\Http\Controllers\UserController::update
+  methods: PUT
+deleteUser:
+  path: /api/v1/user/{id}
+  controller: App\Http\Controllers\UserController::delete
+  methods: DELETE

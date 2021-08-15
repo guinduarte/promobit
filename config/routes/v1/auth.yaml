@@ -1,0 +1,12 @@
+auth:
+  path: /api/v1/auth/signin
+  controller: App\Http\Controllers\AuthController::login
+  methods: POST
+requestPassword:
+  path: /api/v1/auth/request_password
+  controller: App\Http\Controllers\AuthController::requestPassword
+  methods: POST
+resetPassword:
+  path: /api/v1/auth/reset_password
+  controller: App\Http\Controllers\AuthController::resetPassword
+  methods: POST
