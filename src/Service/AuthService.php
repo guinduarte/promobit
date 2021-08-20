@@ -7,6 +7,7 @@ use App\Helper\RandomString;
 use App\Helper\Uuid;
 use App\Notification\RequestPasswordNotification;
 use App\Notification\ResetPasswordNotification;
+use App\Repository\TokenRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Security\TokenGenerator;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -16,11 +17,13 @@ use Symfony\Component\Mime\Email;
 
 class AuthService
 {
-    protected $repository, $tokenGenerator, $queue, $mailer;
+    protected $repository, $tokenRepository, $tokenGenerator, $queue, $mailer;
 
-    function __construct(UserRepositoryInterface $repository, TokenGenerator $tokenGenerator, MessageBusInterface $queue, MailerInterface $mailer)
+    function __construct(TokenRepositoryInterface $tokenRepository, UserRepositoryInterface $repository, TokenGenerator $tokenGenerator, MessageBusInterface $queue, MailerInterface $mailer)
     {
         $this->repository = $repository;
+
+        $this->tokenRepository = $tokenRepository;
 
         $this->tokenGenerator = $tokenGenerator;
 
@@ -32,31 +35,20 @@ class AuthService
     public function login(string $email): ?User
     {
         $user = $this->repository->findByEmail($email);
+        $hash = Uuid::generate();
 
-        // token info
-        $token = [
-            'id' => $user->getId(),
-            'name' => $user->getName(),
-            'email' => $user->getEmail(),
-            'roles' => $user->getRoles(),
-            // 'created_at' => '<created_at>',
-            // 'last_active_at' => '<last_active_at>',
-            // 'ip' => '<user_ip>',
-            // 'device_id' => '<device_id>',
-            // 'fcm_id' => '<fcm_id>',
-        ];
-
-        $uuid = Uuid::generate();
-
-        // storage $token with $uuid identifier key
-        // $this->tokenRepository->create($uuid, $token);
+        $this->tokenRepository->create($user->getEmail(), $hash);
 
         $user->token = $this->tokenGenerator->generate([
-            '_id' => $uuid,
-            'email' => $user->getEmail()
+            '_id' => $hash
         ]);
 
         return $user;
+    }
+
+    public function getToken($hash)
+    {
+        return $this->tokenRepository->getByHash($hash);
     }
 
     public function requestPassword(string $email): bool

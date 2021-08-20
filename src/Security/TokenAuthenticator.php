@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Service\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,13 +15,15 @@ use Symfony\Component\Security\Guard\AbstractGuardAuthenticator;
 
 class TokenAuthenticator extends AbstractGuardAuthenticator
 {
-    private $em, $tokenGenerator;
+    private $em, $tokenGenerator, $authService;
 
-    public function __construct(EntityManagerInterface $em, TokenGenerator $tokenGenerator)
+    public function __construct(EntityManagerInterface $em, TokenGenerator $tokenGenerator, AuthService $authService)
     {
         $this->em = $em;
 
         $this->tokenGenerator = $tokenGenerator;
+
+        $this->authService = $authService;
     }
 
     public function supports(Request $request): bool
@@ -42,16 +45,15 @@ class TokenAuthenticator extends AbstractGuardAuthenticator
         $payload = $this->tokenGenerator->decode($credentials);
 
         if ($payload) {
-            $tokenId = $payload->acb->_id;
+            $hash = $payload->acb->_id;
+            $user = $this->authService->getToken($hash);
 
-            // TODO: check if exist tokenId in database
-            // $token = $this->tokenService->get($tokenId); // recover info from token in mongodb
-            $identifier = $payload->acb->email; // $token->email; // get email from token
-
-            return $userProvider->loadUserByIdentifier($identifier);
+            if ($user) {
+                return $userProvider->loadUserByIdentifier($user);
+            }
         }
 
-        return false;
+        return null;
     }
 
     public function checkCredentials($credentials, UserInterface $user): bool
